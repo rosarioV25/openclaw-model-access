@@ -12,10 +12,12 @@ Every request is paid on its own, in **USDC on Base** via [x402](https://x402.or
 ## Install
 
 ```bash
-openclaw plugins install openclaw-model-access --accept-capabilities
+openclaw plugins install clawhub:openclaw-model-access --accept-capabilities
 npx openclaw-model-access setup --write --default anthropic/claude-sonnet-5.5
 openclaw gateway restart
 ```
+
+The plugin is on [ClawHub](https://clawhub.ai) (security scan clean, source-linked to this repository) and on [npm](https://www.npmjs.com/package/openclaw-model-access). Installing straight from npm also works: `openclaw plugins install openclaw-model-access --force --accept-capabilities`. OpenClaw asks for `--force` because npm sources sit outside ClawHub's review.
 
 `setup` creates a wallet in `~/.openclaw/model-access/wallet.key` (file mode 0600) and prints its address. That key file is the only copy, so back it up.
 
