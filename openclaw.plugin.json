@@ -1,0 +1,103 @@
+{
+  "id": "openclaw-model-access",
+  "name": "Model Access (x402)",
+  "description": "130+ AI models (Claude, GPT, Gemini, Grok, Kimi, GLM, DeepSeek, Llama) with tool calling, paid per request in USDC on Base via x402 from a local wallet, with per-call and per-day spending limits. No account, no API key.",
+  "categories": [
+    "models"
+  ],
+  "activation": {
+    "onStartup": true
+  },
+  "providers": [
+    "model-access"
+  ],
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "walletKey": {
+        "type": "string",
+        "description": "EVM private key (0x + 64 hex) that pays. Optional: by default the key created by `openclaw-model-access setup` in ~/.openclaw/model-access/wallet.key. Also MODEL_ACCESS_WALLET_KEY."
+      },
+      "port": {
+        "type": "integer",
+        "minimum": 1024,
+        "maximum": 65535,
+        "description": "Local proxy port on 127.0.0.1 (default 8423)."
+      },
+      "maxPerCallUsd": {
+        "type": "number",
+        "exclusiveMinimum": 0,
+        "description": "Highest price paid for one request, in USD (default 0.50). Checked before anything is signed."
+      },
+      "maxPerDayUsd": {
+        "type": "number",
+        "exclusiveMinimum": 0,
+        "description": "Highest total paid per day (UTC), in USD (default 5)."
+      },
+      "contextTokens": {
+        "type": "integer",
+        "minimum": 8000,
+        "maximum": 90000,
+        "description": "Active context budget per request (default 60000); OpenClaw compacts the session above it."
+      },
+      "gateway": {
+        "type": "string",
+        "description": "Gateway URL (default https://agent402-arb.rosariovitale0096.workers.dev)."
+      },
+      "payTo": {
+        "type": "string",
+        "description": "The only wallet payments may go to (default: the gateway's wallet). Change it only together with gateway."
+      }
+    }
+  },
+  "uiHints": {
+    "walletKey": {
+      "label": "Wallet private key",
+      "sensitive": true,
+      "advanced": true
+    },
+    "maxPerCallUsd": {
+      "label": "Max per call (USD)"
+    },
+    "maxPerDayUsd": {
+      "label": "Max per day (USD)"
+    },
+    "gateway": {
+      "label": "Gateway URL",
+      "advanced": true
+    },
+    "payTo": {
+      "label": "Pinned payee",
+      "advanced": true
+    },
+    "port": {
+      "label": "Local proxy port",
+      "advanced": true
+    },
+    "contextTokens": {
+      "label": "Context budget (tokens)",
+      "advanced": true
+    }
+  },
+  "syntheticAuthRefs": [
+    "model-access"
+  ],
+  "setup": {
+    "providers": [
+      {
+        "id": "model-access",
+        "authMethods": [
+          "local"
+        ]
+      }
+    ]
+  },
+  "modelPricing": {
+    "providers": {
+      "model-access": {
+        "external": false
+      }
+    }
+  }
+}

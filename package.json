@@ -1,0 +1,79 @@
+{
+  "name": "openclaw-model-access",
+  "version": "0.1.0",
+  "description": "OpenClaw model provider: 130+ AI models (Claude, GPT, Gemini, Grok, Kimi, GLM, DeepSeek) with tool calling, paid per request in USDC on Base via x402 from a local wallet, with spending limits. No account, no API key.",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./proxy": "./proxy.js"
+  },
+  "bin": {
+    "openclaw-model-access": "cli.js"
+  },
+  "files": [
+    "index.js",
+    "proxy.js",
+    "models.js",
+    "state.js",
+    "cli.js",
+    "openclaw.plugin.json",
+    "openclaw.security.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "openclaw": {
+    "extensions": [
+      "./index.js"
+    ],
+    "providers": [
+      "model-access"
+    ],
+    "compat": {
+      "pluginApi": ">=2026.7.1",
+      "minGatewayVersion": "2026.7.1"
+    },
+    "build": {
+      "openclawVersion": "2026.10.3",
+      "pluginSdkVersion": "2026.10.3"
+    },
+    "install": {
+      "npmSpec": "openclaw-model-access",
+      "minHostVersion": ">=2026.7.1"
+    }
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "@x402/core": "2.28.0",
+    "@x402/evm": "2.28.0",
+    "viem": "2.57.5"
+  },
+  "keywords": [
+    "openclaw",
+    "openclaw-plugin",
+    "x402",
+    "usdc",
+    "base",
+    "llm",
+    "ai-models",
+    "claude",
+    "gpt",
+    "gemini",
+    "model-provider"
+  ],
+  "license": "MIT",
+  "author": "rosarioV25",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rosarioV25/openclaw-model-access.git"
+  },
+  "homepage": "https://github.com/rosarioV25/openclaw-model-access#readme",
+  "bugs": {
+    "url": "https://github.com/rosarioV25/openclaw-model-access/issues"
+  }
+}
