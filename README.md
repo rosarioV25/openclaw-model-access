@@ -57,6 +57,13 @@ Every signed payment counts toward the daily limit as soon as it is signed. It i
 
 If the model fails after payment, the gateway refunds the payment automatically. The private key never leaves your machine; only signatures are sent. If the key comes from `MODEL_ACCESS_WALLET_KEY`, the plugin removes that variable from its process environment, so tools started by the agent never see it.
 
+## Security
+
+- The wallet key stays in `~/.openclaw/model-access/wallet.key` (0600) or in `MODEL_ACCESS_WALLET_KEY`. It is used only to sign EIP-3009 USDC authorizations locally and is never sent anywhere.
+- Signing is limited to: USDC on Base, the pinned payee, the `exact` scheme with EIP-3009 (never Permit2), at most 10 minutes of validity, and the per-call and per-day limits.
+- Files written: `~/.openclaw/model-access/` (wallet key, local proxy token, spending ledger, cached model list). `setup --write` also merges its block into `openclaw.json`, keeping everything else in that file.
+- Network: the local proxy listens on 127.0.0.1 only. Prompts and tool definitions are sent to the gateway, and from there to the model supplier that answers.
+
 ## Limits
 
 - Only text is accepted. Images in a prompt are replaced by a short note.

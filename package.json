@@ -18,7 +18,6 @@
     "state.js",
     "cli.js",
     "openclaw.plugin.json",
-    "openclaw.security.json",
     "README.md",
     "LICENSE"
   ],
