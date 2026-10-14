@@ -39,6 +39,27 @@ function textOf(c){
  }).join("");
  return String(c);
 }
+// Gemini 3 "thought signatures": returned in tool_calls[].extra_content and required again on the next turn.
+// OpenClaw replays them only for its own Google providers, so the proxy remembers them by tool-call id and puts them
+// back; an unknown one gets Google's documented skip value. (In memory, last 5000 calls.)
+const SKIP_SIGNATURE={google:{thought_signature:"skip_thought_signature_validator"}};
+export const signatures=new Map();
+// OpenClaw rewrites tool-call ids when it replays them ("call_mock_1" -> "callmock1"): keys ignore punctuation.
+const sigKey=(id)=>String(id??"").replace(/[^a-zA-Z0-9]/g,"");
+export function rememberSignatures(answer){
+ for(const c of answer?.choices||[])for(const t of c?.message?.tool_calls||[]){
+  if(t?.id&&t.extra_content&&typeof t.extra_content==="object"){
+   const k=sigKey(t.id);signatures.delete(k);signatures.set(k,t.extra_content);
+   if(signatures.size>5000)signatures.delete(signatures.keys().next().value);
+  }
+ }
+}
+export function fixFinish(answer){
+ for(const c of answer?.choices||[]){
+  if(c?.message?.tool_calls?.length&&c.finish_reason!=="tool_calls"&&c.finish_reason!=="length")c.finish_reason="tool_calls";
+ }
+ return answer;
+}
 export function gatewayBody(req){
  if(!req||typeof req!=="object"||Array.isArray(req))throw new PaymentRefused("invalid JSON body",400);
  if(typeof req.model!=="string"||!req.model)throw new PaymentRefused("model is required",400);
@@ -48,8 +69,15 @@ export function gatewayBody(req){
   const role=m?.role==="function"?"tool":m?.role;
   if(role==="assistant"&&Array.isArray(m.tool_calls)&&m.tool_calls.length){
    const t=textOf(m.content);
-   return {role,content:t===""?null:t,tool_calls:m.tool_calls.map(c=>({id:safeId(c?.id),type:"function",
-    function:{name:String(c?.function?.name??""),arguments:typeof c?.function?.arguments==="string"?c.function.arguments:JSON.stringify(c?.function?.arguments??{})}}))};
+   return {role,content:t===""?null:t,tool_calls:m.tool_calls.map(c=>{
+    const id=safeId(c?.id);
+    const out={id,type:"function",function:{name:String(c?.function?.name??""),
+     arguments:typeof c?.function?.arguments==="string"?c.function.arguments:JSON.stringify(c?.function?.arguments??{})}};
+    const extra=c?.extra_content&&typeof c.extra_content==="object"?c.extra_content:signatures.get(sigKey(c?.id))??
+     (/gemini-3/i.test(model)?SKIP_SIGNATURE:null);
+    if(extra)out.extra_content=extra;
+    return out;
+   })};
   }
   if(role==="tool")return {role,tool_call_id:safeId(m.tool_call_id),content:textOf(m.content)??""};
   return {role,content:textOf(m.content)??""};
@@ -78,7 +106,8 @@ export function toSSE(res,{includeUsage=false}={}){
   if(typeof m.reasoning_content==="string"&&m.reasoning_content)out+=chunk([{index:i,delta:{reasoning_content:m.reasoning_content},finish_reason:null}]);
   if(typeof m.content==="string"&&m.content)out+=chunk([{index:i,delta:{content:m.content},finish_reason:null}]);
   (m.tool_calls||[]).forEach((t,k)=>{
-   out+=chunk([{index:i,delta:{tool_calls:[{index:k,id:t.id,type:"function",function:{name:t.function?.name,arguments:typeof t.function?.arguments==="string"?t.function.arguments:JSON.stringify(t.function?.arguments??{})}}]},finish_reason:null}]);
+   out+=chunk([{index:i,delta:{tool_calls:[{index:k,id:t.id,type:"function",function:{name:t.function?.name,arguments:typeof t.function?.arguments==="string"?t.function.arguments:JSON.stringify(t.function?.arguments??{})},
+    ...(t.extra_content&&typeof t.extra_content==="object"?{extra_content:t.extra_content}:{})}]},finish_reason:null}]);
   });
   out+=chunk([{index:i,delta:{},finish_reason:c.finish_reason||(m.tool_calls?.length?"tool_calls":"stop")}]);
  }
@@ -230,7 +259,8 @@ export async function startProxy({port,token,walletKey,gateway,payTo,maxPerCallM
     let msg=text.slice(0,300);try{const j=JSON.parse(text);msg=typeof j.error==="string"?j.error:(j.error?.message||msg);}catch{}
     return oaiError(res,r.status===402?402:r.status,"gateway: "+msg);
    }
-   const answer=JSON.parse(text);
+   const answer=fixFinish(JSON.parse(text));
+   rememberSignatures(answer);
    if(parsed.stream===true){
     res.writeHead(200,{"content-type":"text/event-stream","cache-control":"no-cache","connection":"keep-alive"});
     return res.end(toSSE(answer,{includeUsage:parsed.stream_options?.include_usage===true}));

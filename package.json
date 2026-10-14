@@ -1,6 +1,6 @@
 {
   "name": "openclaw-model-access",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "OpenClaw model provider: 130+ AI models (Claude, GPT, Gemini, Grok, Kimi, GLM, DeepSeek) with tool calling, paid per request in USDC on Base via x402 from a local wallet, with spending limits. No account, no API key.",
   "type": "module",
   "main": "index.js",

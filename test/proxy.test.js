@@ -217,3 +217,25 @@ test("settings: an unreadable cap stops the proxy instead of falling back to the
  assert.throws(()=>settings({maxPerCallUsd:0}),/maxPerCallUsd/);
  assert.equal(settings({maxPerDayUsd:2}).maxPerDayMicro,2000000n);
 });
+
+test("Gemini thought signatures: streamed back, remembered, replayed on the next turn; finish_reason fixed",async()=>{
+ const sig={google:{thought_signature:"EoIFCv8EAWkUfRPWkPW"}};
+ const t=await setup({answer:{role:"assistant",content:"Checking.",tool_calls:[{id:"call_546010",type:"function",function:{name:"get_weather",arguments:"{\"city\":\"Rome\"}"},extra_content:sig}]},finish:"stop"});
+ const tools=[{type:"function",function:{name:"get_weather",parameters:{type:"object"}}}];
+ const r=await t.call({model:"google/gemini-3.1-pro",messages:[{role:"user",content:"weather?"}],max_tokens:50,tools,stream:true});
+ const chunks=(await r.text()).split("\n\n").filter(x=>x&&x!=="data: [DONE]").map(x=>JSON.parse(x.slice(6)));
+ const tc=chunks.find(c=>c.choices[0]?.delta?.tool_calls).choices[0].delta.tool_calls[0];
+ assert.deepEqual(tc.extra_content,sig,"OpenClaw receives the signature");
+ assert.equal(chunks.find(c=>c.choices[0]?.finish_reason).choices[0].finish_reason,"tool_calls","mock says stop with text: fixed");
+ // next turn: OpenClaw replays the call WITHOUT extra_content (only for its own Google providers) and with the id
+ // stripped of punctuation (seen with OpenClaw 2026.10.3)
+ await t.call({model:"google/gemini-3.1-pro",max_tokens:50,tools,messages:[{role:"user",content:"weather?"},
+  {role:"assistant",content:null,tool_calls:[{id:"call546010",type:"function",function:{name:"get_weather",arguments:"{\"city\":\"Rome\"}"}}]},
+  {role:"tool",tool_call_id:"call546010",content:"18 C"},
+  {role:"assistant",content:null,tool_calls:[{id:"call_unknown",type:"function",function:{name:"get_weather",arguments:"{}"}}]},
+  {role:"tool",tool_call_id:"call_unknown",content:"?"}]});
+ const sent=t.g.st.bodies.at(-1).messages;
+ assert.deepEqual(sent[1].tool_calls[0].extra_content,sig,"remembered signature put back");
+ assert.deepEqual(sent[3].tool_calls[0].extra_content,{google:{thought_signature:"skip_thought_signature_validator"}},"unknown one: skip value");
+ await t.done();
+});

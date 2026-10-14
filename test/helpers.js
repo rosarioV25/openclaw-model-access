@@ -46,7 +46,7 @@ export async function mockGateway(o={}){
   st.paid++;st.lastPaidValue=a.value;
   res.writeHead(200,{"content-type":"application/json"});
   res.end(JSON.stringify({id:"chatcmpl-1",object:"chat.completion",created:1760000000,model:body.model,
-   choices:[{index:0,message:st.o.answer||{role:"assistant",content:"OK from "+body.model},finish_reason:st.o.answer?.tool_calls?"tool_calls":"stop"}],
+   choices:[{index:0,message:st.o.answer||{role:"assistant",content:"OK from "+body.model},finish_reason:st.o.finish||(st.o.answer?.tool_calls?"tool_calls":"stop")}],
    usage:{prompt_tokens:12,completion_tokens:3,total_tokens:15}}));
  });
  await new Promise(r=>server.listen(0,"127.0.0.1",r));
